@@ -1,0 +1,27 @@
+{
+  "name": "bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "seed": "node prisma/seed.js",
+    "prisma:generate": "npx prisma generate",
+    "prisma:migrate": "npx prisma migrate dev"
+  },
+  "prisma": {
+    "seed": "node ./prisma/seed.js"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.5.0",
+    "@prisma/client": "^7.5.0",
+    "axios": "^1.13.6",
+    "dotenv": "^16.6.1",
+    "ioredis": "^5.10.0",
+    "pg": "^8.20.0",
+    "prisma": "^7.5.0",
+    "telegraf": "^4.16.3"
+  }
+}

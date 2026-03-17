@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id         Int      @id @default(autoincrement())
+  telegramId BigInt   @unique
+  username   String?
+  createdAt  DateTime @default(now())
+
+  conversions Conversion[]
+}
+
+model Rate {
+  id        Int      @id @default(autoincrement())
+  currency  String   // USD, THB, CNY...
+  buyRate   Float    // shop buys from user
+  sellRate  Float    // shop sells to user
+  shopId    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  shop      ExchangeShop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@index([currency])
+  @@map("rates")
+}
+
+model Conversion {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  fromCurrency String
+  toCurrency   String
+  amount       Float
+  result       Float
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model ExchangeShop {
+  id         Int      @id @default(autoincrement())
+  name       String
+  location   String
+  latitude   Float?   // for future map feature
+  longitude  Float?
+  contact    String?
+  telegram   String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  rates      Rate[]
+
+  @@map("exchange_shops")
+}
+
+model RateAlert {
+  id        Int      @id @default(autoincrement())
+  userId    BigInt
+  currency  String
+  targetRate Float?
+  createdAt DateTime @default(now())
+}
