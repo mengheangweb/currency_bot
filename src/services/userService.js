@@ -1,17 +1,46 @@
 const prisma = require("../database/prisma");
 
-async function createUser(ctx) {
-
-  const user = await prisma.user.upsert({
-    where: { telegramId: ctx.from.id },
-    update: {},
-    create: {
-      telegramId: ctx.from.id,
-      username: ctx.from.username
-    }
-  });
-
-  return user;
+function toBigInt(id) {
+  return BigInt(id);
 }
 
-module.exports = { createUser };
+async function getOrCreateUser(telegramId, username = null) {
+  return prisma.user.upsert({
+    where: {
+      telegramId: toBigInt(telegramId)
+    },
+    update: username ? { username } : {},
+    create: {
+      telegramId: toBigInt(telegramId),
+      username
+    }
+  });
+}
+
+async function updateDefaultCurrency(telegramId, currency) {
+  return prisma.user.update({
+    where: {
+      telegramId: toBigInt(telegramId)
+    },
+    data: {
+      defaultCurrency: currency
+    }
+  });
+}
+
+async function updateAlertSetting(telegramId, enabled) {
+  return prisma.user.update({
+    where: {
+      telegramId: toBigInt(telegramId)
+    },
+    data: {
+      alertsEnabled: enabled
+    }
+  });
+}
+
+module.exports = {
+  getOrCreateUser,
+  updateDefaultCurrency,
+  updateAlertSetting
+};

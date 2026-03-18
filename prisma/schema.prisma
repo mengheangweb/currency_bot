@@ -7,50 +7,33 @@ datasource db {
 }
 
 model User {
-  id         Int      @id @default(autoincrement())
-  telegramId BigInt   @unique
-  username   String?
-  createdAt  DateTime @default(now())
+  id              Int      @id @default(autoincrement())
+  telegramId      BigInt   @unique
+  username        String?
+  defaultCurrency String   @default("USD")
+  alertsEnabled   Boolean  @default(true)
+  preferredShopId Int?
 
-  conversions Conversion[]
-}
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-model Rate {
-  id        Int      @id @default(autoincrement())
-  currency  String   // USD, THB, CNY...
-  buyRate   Float    // shop buys from user
-  sellRate  Float    // shop sells to user
-  shopId    Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  conversions     Conversion[]
+  histories       ConversionHistory[]
+  alerts          RateAlert[]
 
-  shop      ExchangeShop @relation(fields: [shopId], references: [id], onDelete: Cascade)
-
-  @@index([currency])
-  @@map("rates")
-}
-
-model Conversion {
-  id           Int      @id @default(autoincrement())
-  userId       Int
-  fromCurrency String
-  toCurrency   String
-  amount       Float
-  result       Float
-  createdAt    DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id])
+  @@map("users")
 }
 
 model ExchangeShop {
   id         Int      @id @default(autoincrement())
   name       String
   location   String
-  latitude   Float?   // for future map feature
+  latitude   Float?
   longitude  Float?
   contact    String?
   telegram   String?
   isActive   Boolean  @default(true)
+
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -59,10 +42,63 @@ model ExchangeShop {
   @@map("exchange_shops")
 }
 
-model RateAlert {
+model Rate {
   id        Int      @id @default(autoincrement())
-  userId    BigInt
   currency  String
-  targetRate Float?
+  buyRate   Float
+  sellRate  Float
+
+  shopId    Int
+  shop      ExchangeShop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([currency])
+  @@map("rates")
+}
+
+model Conversion {
+  id           Int      @id @default(autoincrement())
+
+  userId       Int
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  fromCurrency String
+  toCurrency   String
+  amount       Float
+  result       Float
+
+  createdAt    DateTime @default(now())
+
+  @@map("conversions")
+}
+
+model ConversionHistory {
+  id        Int      @id @default(autoincrement())
+
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  amount    Float
+  currency  String
+  result    Float
+
+  createdAt DateTime @default(now())
+
+  @@map("conversion_history")
+}
+
+model RateAlert {
+  id         Int      @id @default(autoincrement())
+
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  currency   String
+  targetRate Float?
+
+  createdAt  DateTime @default(now())
+
+  @@map("rate_alerts")
 }

@@ -1,17 +1,28 @@
 const rateService = require("../../services/rateService");
 const parseCurrency = require("../../utils/parseCurrency");
+const historyService = require("../../services/historyService");
+const userService = require("../../services/userService");
 
 module.exports = (bot) => {
 
   bot.hears(/(.+)/, async (ctx) => {
+
     try {
 
-      const parsed = parseCurrency(ctx.message.text);
+      const text = ctx.message.text;
+
+      const parsed = parseCurrency(text);
       if (!parsed) return;
 
       const { amount, currency } = parsed;
 
-      // 💵 Foreign → KHR
+      // Ensure user exists
+      const user = await userService.getOrCreateUser(
+        ctx.from.id,
+        ctx.from.username
+      );
+
+      // 💵 Foreign Currency → KHR
       if (currency !== "KHR") {
 
         const rate = await rateService.getRate(currency);
@@ -22,13 +33,21 @@ module.exports = (bot) => {
 
         const result = amount * rate.sellRate;
 
+        await historyService.saveHistory(
+          user.id,
+          amount,
+          currency,
+          result
+        );
+
         return ctx.reply(
           `💱 *Conversion*\n\n${amount} ${currency} = ${result.toLocaleString()} KHR`,
           { parse_mode: "Markdown" }
         );
+
       }
 
-      // 🇰🇭 KHR → ALL
+      // 🇰🇭 KHR → Other Currencies
       const rates = await rateService.getAllRates();
 
       if (!rates.length) {
@@ -47,19 +66,32 @@ module.exports = (bot) => {
 
       let message = `💱 *Conversion*\n\n${amount.toLocaleString()} KHR ≈\n\n`;
 
-      rates.forEach((r) => {
+      for (const rate of rates) {
 
-        const result = amount / r.sellRate;
+        const result = amount / rate.sellRate;
 
-        message += `${flags[r.currency] || "💵"} ${r.currency}: ${result.toFixed(2)}\n`;
+        message += `${flags[rate.currency] || "💵"} ${rate.currency}: ${result.toFixed(2)}\n`;
 
+      }
+
+      await historyService.saveHistory(
+        user.id,
+        amount,
+        currency,
+        amount
+      );
+
+      return ctx.reply(message, {
+        parse_mode: "Markdown"
       });
 
-      return ctx.reply(message, { parse_mode: "Markdown" });
+    } catch (error) {
 
-    } catch (err) {
-      console.error(err);
+      console.error("Conversion Error:", error);
+      ctx.reply("⚠️ Something went wrong while converting.");
+
     }
+
   });
 
 };
