@@ -10,12 +10,12 @@ async function start() {
 
     // Run once when server starts
     console.log("Updating exchange rates at startup...");
-    await updateRates();
+    await updateRates(bot);
 
     // Run every 1 minute
     cron.schedule("*/30 * * * *", async () => {
       console.log("Updating exchange rates...");
-      await updateRates();
+      await updateRates(bot);
     });
 
     await bot.launch();

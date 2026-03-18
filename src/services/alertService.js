@@ -1,23 +1,33 @@
 const prisma = require("../database/prisma");
 
 async function createAlert(userId, currency) {
-  return prisma.rateAlert.create({
-    data: {
+
+  return prisma.rateAlert.upsert({
+    where: {
+      userId_currency: {
+        userId: userId,
+        currency: currency
+      }
+    },
+    update: {},
+    create: {
       userId,
       currency
     }
   });
+
 }
 
-async function getUserAlerts(userId) {
+async function getAlertsByCurrency(currency) {
+
   return prisma.rateAlert.findMany({
-    where: {
-      userId
-    }
+    where: { currency },
+    include: { user: true }
   });
+
 }
 
 module.exports = {
   createAlert,
-  getUserAlerts
+  getAlertsByCurrency
 };

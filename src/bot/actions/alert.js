@@ -3,7 +3,6 @@ const userService = require("../../services/userService");
 
 module.exports = (bot) => {
 
-  // 🔔 Rate Alert Menu
   bot.hears("🔔 Rate Alert", async (ctx) => {
 
     return ctx.reply(
@@ -26,20 +25,21 @@ module.exports = (bot) => {
   });
 
 
-  // 🔔 Create Alert
   bot.action(/alert_(.+)/, async (ctx) => {
 
     await ctx.answerCbQuery();
 
     const currency = ctx.match[1];
 
-    // Ensure user exists
-    const user = await userService.getOrCreateUser(ctx.from.id);
+    const user = await userService.getOrCreateUser(
+      ctx.from.id,
+      ctx.from.username
+    );
 
     await alertService.createAlert(user.id, currency);
 
-    return ctx.reply(
-      `🔔 Alert set for *${currency}*.\n\nI will notify you when the rate changes.`,
+    await ctx.reply(
+      `🔔 Alert enabled for *${currency}*.\n\nYou will be notified when the rate changes.`,
       { parse_mode: "Markdown" }
     );
 
