@@ -50,4 +50,32 @@ module.exports = (bot) => {
 
   });
 
+  bot.action("show_rates", async (ctx) => {
+
+  await ctx.answerCbQuery();
+
+  return ctx.reply(
+    "💱 Select a currency:",
+    {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: "🇺🇸 USD", callback_data: "rate_USD" },
+            { text: "🇹🇭 THB", callback_data: "rate_THB" }
+          ],
+          [
+            { text: "🇨🇳 CNY", callback_data: "rate_CNY" },
+            { text: "🇻🇳 VND", callback_data: "rate_VND" }
+          ],
+          [
+            { text: "🇪🇺 EUR", callback_data: "rate_EUR" },
+            { text: "🇸🇬 SGD", callback_data: "rate_SGD" }
+          ]
+        ]
+      }
+    }
+  );
+
+});
+
 };

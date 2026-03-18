@@ -22,7 +22,12 @@ module.exports = (bot) => {
       const text = ctx.message.text;
 
       const parsed = parseCurrency(text);
-      if (!parsed) return;
+
+      if (!parsed) {
+        return ctx.reply(
+          "❗ Please include a currency.\n\nExample:\n• 10 USD\n• 500 THB\n• 40000 KHR"
+        );
+      }
 
       const { amount, currency } = parsed;
 
