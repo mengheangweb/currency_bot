@@ -27,6 +27,8 @@ model User {
 model ExchangeShop {
   id         Int      @id @default(autoincrement())
   name       String
+  buyMargin Float  @default(0)
+  sellMargin Float @default(0)
   location   String
   latitude   Float?
   longitude  Float?
@@ -101,4 +103,14 @@ model RateAlert {
   createdAt  DateTime @default(now())
 
   @@map("rate_alerts")
+}
+
+model MarketRate {
+  id        Int      @id @default(autoincrement())
+  currency  String   @unique
+  rate      Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+    @@map("market_rates")
 }

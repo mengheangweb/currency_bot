@@ -3,94 +3,109 @@ const exchangeService = require("../../services/exchangeService");
 const historyService = require("../../services/historyService");
 const userService = require("../../services/userService");
 
+const flags = {
+  USD: "🇺🇸",
+  THB: "🇹🇭",
+  CNY: "🇨🇳",
+  VND: "🇻🇳",
+  EUR: "🇪🇺",
+  SGD: "🇸🇬",
+  MYR: "🇲🇾"
+};
+
 module.exports = (bot) => {
 
-// 📊 Show Exchange Rates
-bot.hears("📊 Rates", async (ctx) => {
+  /* =========================
+     📊 EXCHANGE RATES
+  ========================== */
+  bot.hears("📊 Rates", async (ctx) => {
 
-  const rates = await rateService.getAllRates();
+    const rates = await rateService.getAllRates();
 
-  if (!rates.length) {
-    return ctx.reply("❌ No exchange rates available.");
-  }
+    if (!rates.length) {
+      return ctx.reply("❌ No exchange rates available.");
+    }
 
-  const flags = {
-    USD: "🇺🇸",
-    THB: "🇹🇭",
-    CNY: "🇨🇳",
-    VND: "🇻🇳",
-    EUR: "🇪🇺",
-    SGD: "🇸🇬",
-    MYR: "🇲🇾"
-  };
+    let message = "💱 *Live Exchange Rates*\n";
+    message += "━━━━━━━━━━━━━━\n\n";
 
-  let message = `💱 *Live Exchange Rates*\n`;
-  message += `━━━━━━━━━━━━━━\n\n`;
+    for (const r of rates) {
+      message += `${flags[r.currency] || "💵"} *${r.currency}* — ${r.rate.toLocaleString()} KHR\n`;
+    }
 
-  rates.forEach((r) => {
-    message += `${flags[r.currency] || "💵"} *${r.currency}* — ${r.buyRate.toLocaleString()} KHR\n`;
-  });
+    const keyboard = [];
 
-  // 2 buttons per row
-  const keyboard = [];
+    for (let i = 0; i < rates.length; i += 2) {
 
-  for (let i = 0; i < rates.length; i += 2) {
+      const row = [
+        {
+          text: `${flags[rates[i].currency] || "💱"} ${rates[i].currency}`,
+          callback_data: `rate_${rates[i].currency}`
+        }
+      ];
 
-    const row = [
-      {
-        text: `${flags[rates[i].currency]} ${rates[i].currency}`,
-        callback_data: `rate_${rates[i].currency}`
+      if (rates[i + 1]) {
+        row.push({
+          text: `${flags[rates[i + 1].currency] || "💱"} ${rates[i + 1].currency}`,
+          callback_data: `rate_${rates[i + 1].currency}`
+        });
       }
-    ];
 
-    if (rates[i + 1]) {
-      row.push({
-        text: `${flags[rates[i + 1].currency]} ${rates[i + 1].currency}`,
-        callback_data: `rate_${rates[i + 1].currency}`
-      });
+      keyboard.push(row);
     }
 
-    keyboard.push(row);
-  }
-
-  await ctx.reply(message, {
-    parse_mode: "Markdown",
-    reply_markup: {
-      inline_keyboard: keyboard
-    }
-  });
-
-});
-
-  // 💱 Convert
-  bot.hears("💱 Convert", (ctx) => {
-    ctx.reply("Send amount like:\n\n10 USD\n40000 KHR");
-  });
-
-  // 📍 Best Exchange Shops
-  bot.hears("📍 Best Exchange", async (ctx) => {
-
-    const shops = await exchangeService.getBestShops();
-
-    if (!shops.length) {
-      return ctx.reply("❌ No exchange shops available.");
-    }
-
-    const message = shops.map((s) =>
-      `🏪 *${s.shop.name}*\n` +
-      `💵 Buy: ${s.buyRate} KHR\n` +
-      `💰 Sell: ${s.sellRate} KHR\n` +
-      `📍 ${s.shop.location}\n` +
-      `📞 ${s.shop.contact || "N/A"}`
-    ).join("\n\n");
-
-    ctx.reply(`🏆 *Best Exchange Rates Today*\n\n${message}`, {
-      parse_mode: "Markdown"
+    await ctx.reply(message, {
+      parse_mode: "Markdown",
+      reply_markup: { inline_keyboard: keyboard }
     });
 
   });
 
-  // 🔔 Rate Alert
+
+  /* =========================
+     💱 CONVERTER
+  ========================== */
+  bot.hears("💱 Convert", (ctx) => {
+    ctx.reply("Send amount like:\n\n10 USD\n40000 KHR");
+  });
+
+
+  /* =========================
+     📍 BEST EXCHANGE SHOPS
+  ========================== */
+bot.hears("📍 Best Exchange", async (ctx) => {
+
+  const shops = await exchangeService.getBestShops();
+
+  if (!shops.length) {
+    return ctx.reply("❌ No exchange shops available.");
+  }
+
+  const message = shops.map((s) => {
+
+    const buyRate = s.buyRate ? s.buyRate.toLocaleString() : "N/A";
+    const sellRate = s.sellRate ? s.sellRate.toLocaleString() : "N/A";
+
+    return (
+      `🏪 *${s.shop.name}*\n` +
+      `💵 Buy: ${buyRate} KHR\n` +
+      `💰 Sell: ${sellRate} KHR\n` +
+      `📍 ${s.shop.location}\n` +
+      `📞 ${s.shop.contact || "N/A"}`
+    );
+
+  }).join("\n\n");
+
+  ctx.reply(`🏆 *Best Exchange Rates Today*\n\n${message}`, {
+    parse_mode: "Markdown"
+  });
+
+});
+
+
+  /* =========================
+     🔔 RATE ALERTS
+  ========================== */
   bot.hears("🔔 Rate Alert", (ctx) => {
 
     ctx.reply("🔔 Select currency to receive alerts:", {
@@ -110,28 +125,33 @@ bot.hears("📊 Rates", async (ctx) => {
 
   });
 
-  // 📜 History
-bot.hears("📜 History", async (ctx) => {
 
-  const user = await userService.getOrCreateUser(ctx.from.id);
+  /* =========================
+     📜 USER HISTORY
+  ========================== */
+  bot.hears("📜 History", async (ctx) => {
 
-  const history = await historyService.getUserHistory(user.id);
+    const user = await userService.getOrCreateUser(ctx.from.id);
+    const history = await historyService.getUserHistory(user.id);
 
-  if (!history.length) {
-    return ctx.reply("📜 No conversion history yet.");
-  }
+    if (!history.length) {
+      return ctx.reply("📜 No conversion history yet.");
+    }
 
-  let message = "📜 *Your Last Conversions*\n\n";
+    let message = "📜 *Your Last Conversions*\n\n";
 
-  history.forEach((h, i) => {
-    message += `${i + 1}. ${h.amount} ${h.currency} → ${h.result}\n`;
+    history.forEach((h, i) => {
+      message += `${i + 1}. ${h.amount} ${h.currency} → ${h.result}\n`;
+    });
+
+    ctx.reply(message, { parse_mode: "Markdown" });
+
   });
 
-  ctx.reply(message, { parse_mode: "Markdown" });
 
-});
-
-  // ⚙ Settings
+  /* =========================
+     ⚙ SETTINGS
+  ========================== */
   bot.hears("⚙ Settings", (ctx) => {
 
     ctx.reply("⚙ *Bot Settings*\n\nSelect what you want to configure:", {
@@ -147,7 +167,10 @@ bot.hears("📜 History", async (ctx) => {
 
   });
 
-  // 💱 Currency Settings
+
+  /* =========================
+     💱 DEFAULT CURRENCY
+  ========================== */
   bot.action("set_currency", async (ctx) => {
 
     await ctx.answerCbQuery();
@@ -182,12 +205,15 @@ bot.hears("📜 History", async (ctx) => {
 
   });
 
-    // 🔔 Alert Settings Menu
+
+  /* =========================
+     🔔 ALERT SETTINGS
+  ========================== */
   bot.action("set_alerts", async (ctx) => {
 
     await ctx.answerCbQuery();
 
-    return ctx.reply("🔔 Manage alerts:", {
+    ctx.reply("🔔 Manage alerts:", {
       reply_markup: {
         inline_keyboard: [
           [
@@ -200,31 +226,28 @@ bot.hears("📜 History", async (ctx) => {
 
   });
 
-
-  // 🔔 Toggle Alerts
   bot.action(/alerts_(on|off)/, async (ctx) => {
 
     await ctx.answerCbQuery();
 
     const enabled = ctx.match[1] === "on";
 
-    // Ensure user exists
     await userService.getOrCreateUser(ctx.from.id);
-
     await userService.updateAlertSetting(ctx.from.id, enabled);
 
-    return ctx.reply(
+    ctx.reply(
       enabled ? "🔔 Alerts enabled" : "🔕 Alerts disabled"
     );
 
   });
 
 
-  // 🏪 Preferred Shop
+  /* =========================
+     🏪 PREFERRED SHOP
+  ========================== */
   bot.action("set_shop", async (ctx) => {
 
     await ctx.answerCbQuery();
-
     ctx.reply("🏪 Preferred shop feature coming soon.");
 
   });

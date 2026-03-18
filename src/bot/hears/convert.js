@@ -3,6 +3,16 @@ const parseCurrency = require("../../utils/parseCurrency");
 const historyService = require("../../services/historyService");
 const userService = require("../../services/userService");
 
+const flags = {
+  USD: "🇺🇸",
+  THB: "🇹🇭",
+  CNY: "🇨🇳",
+  VND: "🇻🇳",
+  EUR: "🇪🇺",
+  SGD: "🇸🇬",
+  MYR: "🇲🇾"
+};
+
 module.exports = (bot) => {
 
   bot.hears(/(.+)/, async (ctx) => {
@@ -22,16 +32,18 @@ module.exports = (bot) => {
         ctx.from.username
       );
 
-      // 💵 Foreign Currency → KHR
+      /* =========================
+         FOREIGN → KHR
+      ========================== */
       if (currency !== "KHR") {
 
         const rate = await rateService.getRate(currency);
 
-        if (!rate) {
+        if (!rate || !rate.marketRate) {
           return ctx.reply(`❌ ${currency} rate not available.`);
         }
 
-        const result = amount * rate.sellRate;
+        const result = amount * rate.marketRate;
 
         await historyService.saveHistory(
           user.id,
@@ -41,34 +53,28 @@ module.exports = (bot) => {
         );
 
         return ctx.reply(
-          `💱 *Conversion*\n\n${amount} ${currency} = ${result.toLocaleString()} KHR`,
+          `💱 *Conversion*\n\n${amount} ${currency} ≈ ${result.toLocaleString()} KHR`,
           { parse_mode: "Markdown" }
         );
 
       }
 
-      // 🇰🇭 KHR → Other Currencies
+      /* =========================
+         KHR → OTHER CURRENCIES
+      ========================== */
       const rates = await rateService.getAllRates();
 
       if (!rates.length) {
         return ctx.reply("❌ No exchange rates available.");
       }
 
-      const flags = {
-        USD: "🇺🇸",
-        THB: "🇹🇭",
-        CNY: "🇨🇳",
-        VND: "🇻🇳",
-        EUR: "🇪🇺",
-        SGD: "🇸🇬",
-        MYR: "🇲🇾"
-      };
-
       let message = `💱 *Conversion*\n\n${amount.toLocaleString()} KHR ≈\n\n`;
 
       for (const rate of rates) {
 
-        const result = amount / rate.sellRate;
+        if (!rate.rate) continue;
+
+        const result = amount / rate.rate;
 
         message += `${flags[rate.currency] || "💵"} ${rate.currency}: ${result.toFixed(2)}\n`;
 
